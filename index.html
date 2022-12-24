@@ -12,12 +12,133 @@
     <script type="module" src="script.js"></script>
   </head>
   <body>
-    <nav>
-      <a href="/" aria-current="page">Home</a>
-      <a href="/page2.html">Other page</a>
-    </nav>
-    <main>
-      <h1>Home page</h1>
-    </main>
+    <form name="form1" id="form1">
+      <label for="name">Name:</label><br />
+      <input type="text" id="name" name="name" /><br />
+      <label for="phone">Phone Number:</label><br />
+      <input type="text" id="phone" name="phone" /><br />
+      <label for="gender">Gender:</label><br />
+      <select id="gender" name="gender">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option></select
+      ><br /><br />
+      <input type="submit" value="Submit" id="sbt-btn" />
+    </form>
+
+    <button onclick="addForm()">Add Form</button>
+
+    <script>
+      (function () {
+        if (typeof document.querySelectorAll === 'undefined') {
+          return;
+        }
+        window.addEventListener('beforeunload', function (e) {
+          findUnsubmittedForms().forEach(function (it) {
+            it.history.map(function (field) {
+              const eventData = {
+                event: 'formAbandonment',
+                eventCategory: 'Form Abandonment',
+                eventAction: field,
+              };
+              window.dataLayer.push(eventData);
+            });
+          });
+        });
+
+        var fieldsEvents = {};
+
+        window.addEventListener('load', function () {
+          document.addEventListener('change', function (e) {
+            var target = e.target;
+            if (
+              target &&
+              target.tagName &&
+              (target.tagName.toUpperCase() == 'INPUT' ||
+                target.tagName.toUpperCase() == 'TEXTAREA' ||
+                target.tagName.toUpperCase() == 'SELECT')
+            ) {
+              var inputName = target.getAttribute('name');
+              var form = target.form;
+              if (form && inputName) {
+                var formName = form.getAttribute('name');
+                if (typeof fieldsEvents[formName] == 'undefined') {
+                  fieldsEvents[formName] = [];
+                }
+                if (fieldsEvents[formName].slice(-1) != inputName) {
+                  fieldsEvents[formName].push(inputName);
+                }
+              }
+            }
+          });
+          document.addEventListener('click', function (e) {
+            var target = e.target;
+
+            if (target.type === 'submit') {
+              var form = target.form;
+              if (form && form.name) {
+                getFormSubmittedEvent(form.name);
+              }
+            }
+          });
+        });
+
+        function findUnsubmittedForms() {
+          if (Object.keys(fieldsEvents)) {
+            return Object.keys(fieldsEvents)
+              .filter(hasNoFormSubmitEvent(window.dataLayer))
+              .map(findFormFromHistory)
+              .filter(notEmpty);
+          } else {
+            return [];
+          }
+        }
+
+        function hasNoFormSubmitEvent(dataLayer) {
+          return function (name) {
+            return (
+              dataLayer
+                .filter(isFormSubmitEvent)
+                .map(getFormName)
+                .indexOf(name) == -1
+            );
+          };
+        }
+
+        function isFormSubmitEvent(e) {
+          return e.event === 'form_submission';
+        }
+
+        function getFormName(e) {
+          return e['gtm.element'].name;
+        }
+
+        function findFormFromHistory(name) {
+          return {
+            name: name,
+            history: fieldsEvents[name] || [],
+          };
+        }
+
+        function notEmpty(form) {
+          return form.history.length > 0;
+        }
+
+        // from tracking on submit
+        function getFormSubmittedEvent(formName) {
+          let formData = fieldsEvents[formName];
+          if (formData) {
+            formData.map(function (field) {
+              const eventData = {
+                event: 'formSubmitted',
+                eventCategory: 'Form Submitted',
+                eventAction: field,
+              };
+              window.dataLayer.push(eventData);
+            });
+          }
+        }
+      })();
+    </script>
   </body>
 </html>
